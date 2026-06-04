@@ -380,39 +380,35 @@ body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-
 // ===== JSONBIN CONFIG =====
 const JSONBIN_KEY = '$2a$10$G426VujT/HFIClJfrs5Y2.wQam6KGp3OeyHIYr3L0mLEobHl6fWv.';
 const JSONBIN_API = 'https://api.jsonbin.io/v3/b';
-// Bin IDs — 首次运行自动创建，之后写入 localStorage 记住
-let BIN_IDS = JSON.parse(localStorage.getItem('even_bin_ids') || '{}');
+const BIN_IDS = {
+  'even-dishes':     '6a210eeada38895dfe84a45f',
+  'even-orders':     '6a210f0fda38895dfe84a4df',
+  'even-categories': '6a210f2cf5f4af5e29b62d7c'
+};
 
 async function jbGet(name) {
   try {
-    if (!BIN_IDS[name]) return null;
     const r = await fetch(`${JSONBIN_API}/${BIN_IDS[name]}/latest`, {
-      headers: {'X-Master-Key': JSONBIN_KEY}
+      headers: {
+        'X-Master-Key': JSONBIN_KEY,
+        'X-Bin-Meta': 'false'
+      }
     });
     const data = await r.json();
-    return data.record?.value ?? null;
+    return data.value ?? null;
   } catch(e) { console.error('jbGet error', e); return null; }
 }
 
 async function jbSet(name, val) {
   try {
-    if (!BIN_IDS[name]) {
-      // 创建新 bin
-      const r = await fetch(JSONBIN_API, {
-        method: 'POST',
-        headers: {'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY,'X-Bin-Name':name,'X-Bin-Private':'false'},
-        body: JSON.stringify({value: val})
-      });
-      const data = await r.json();
-      BIN_IDS[name] = data.metadata?.id;
-      localStorage.setItem('even_bin_ids', JSON.stringify(BIN_IDS));
-    } else {
-      await fetch(`${JSONBIN_API}/${BIN_IDS[name]}`, {
-        method: 'PUT',
-        headers: {'Content-Type':'application/json','X-Master-Key':JSONBIN_KEY},
-        body: JSON.stringify({value: val})
-      });
-    }
+    await fetch(`${JSONBIN_API}/${BIN_IDS[name]}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': JSONBIN_KEY
+      },
+      body: JSON.stringify({value: val})
+    });
   } catch(e) { console.error('jbSet error', e); }
 }
 
